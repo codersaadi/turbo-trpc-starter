@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { betterFetch } from "@better-fetch/fetch";
+import { LANGUAGES, ORG_LOCALE_HEADER } from "@repo/i18n/config/client";
 const loginPage = "/login";
 // Routes that don't require authentication
 const publicRoutes = [
@@ -40,6 +41,53 @@ function requiresAdminAccess(pathname: string): boolean {
 
 export default async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  // Check if pathname starts with a locale
+  const pathSegments = pathname.split("/").filter(Boolean);
+  const firstSegment = pathSegments[0] || "";
+
+  // Check if the first segment is a locale code (e.g., 'en-US', 'ar')
+  const isLocaleInPath = LANGUAGES.some((lang) => firstSegment === lang);
+
+  // Determine the actual path (without locale prefix)
+  let actualPath: string;
+  let localePrefix: string | null = null;
+
+  if (isLocaleInPath) {
+    localePrefix = firstSegment;
+    actualPath =
+      pathSegments.length > 1 ? `/${pathSegments.slice(1).join("/")}` : "/";
+  } else {
+    actualPath = pathname;
+  }
+
+  // If the URL contains a locale, redirect to remove it and set the cookie
+  if (isLocaleInPath) {
+    const redirectUrl = new URL(actualPath, request.url);
+    redirectUrl.search = request.nextUrl.search;
+
+    const response = NextResponse.redirect(redirectUrl);
+
+    // Set the locale cookie so the client knows which language to use
+    // We need to import ORG_LOCALE_HEADER if it's not available,
+    // but looking at imports it seems we need to add it or use the string literal if imports are tricky to change here.
+    // The file already imports FALLBACK_LNG, LANGUAGES from @repo/i18n/config/client
+    // Let's check imports first. ORG_LOCALE_HEADER is not imported.
+    // I will use the string "x-org-locale" or try to add the import in a separate step if needed.
+    // Wait, I can see the imports in the file view.
+    // It imports { FALLBACK_LNG, LANGUAGES } from "@repo/i18n/config/client";
+    // I should probably add ORG_LOCALE_HEADER to the import list first or just use the string if I want to be safe in one go.
+    // However, to be clean, I should probably update the imports first or just use the string "x-org-locale" which is likely the value.
+    // Actually, looking at other files, it seems ORG_LOCALE_HEADER is standard.
+    // Let's assume I can't easily change imports in this block.
+    // I'll use a hardcoded string "x-org-locale" for now to be safe, or better, I will check the imports again.
+    // The imports are at the top. I can't change them with this tool call easily if I'm targeting the middle.
+    // I'll use "x-org-locale" and add a TODO or just use it.
+    // Actually, I'll just use the string literal "x-org-locale" as it is defined in the config.
+
+    response.cookies.set(ORG_LOCALE_HEADER, firstSegment);
+    return response;
+  }
 
   // Skip middleware for public routes
   if (isPublicRoute(pathname)) {

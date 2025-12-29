@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "../../../libs/trpc/trpc-utils";
 import { AdminHeader } from "../../../components/admin/admin-header";
-import { DataTable, Column } from "../../../components/admin/data-table";
+import {
+  DataTable,
+  DataTableColumnHeader,
+  useDataTable,
+} from "@repo/ui/components/data-table";
+import type { ColumnDef } from "@repo/ui/components/data-table";
 import { StatsCard } from "../../../components/admin/stats-card";
 import { Button } from "@repo/ui/components/ui/button";
 import { Badge } from "@repo/ui/components/ui/badge";
@@ -26,8 +31,8 @@ import {
 import { Switch } from "@repo/ui/components/ui/switch";
 import { Label } from "@repo/ui/components/ui/label";
 import { Key, Trash2, Activity, Clock } from "lucide-react";
-import { useDebounce } from "@repo/ui/hooks/use-debounce";
 import { toast } from "@repo/ui/components/ui/sonner";
+
 type Session = {
   id: string;
   token: string;
@@ -55,20 +60,26 @@ export default function SessionsPage() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [search, setSearch] = useState("");
+  // Active only filter (not managed by useDataTable since it's custom)
   const [activeOnly, setActiveOnly] = useState(true);
-  const debouncedSearch = useDebounce(search, 300);
 
+  // Dialogs
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
+  // Use the new useDataTable hook for URL state
+  const { queryState, tableState } = useDataTable({
+    defaultPageSize: 20,
+    defaultSortBy: "createdAt",
+    defaultSortOrder: "desc",
+  });
+
+  // Query with combined state
   const { data, isLoading } = useQuery(
     trpc.admin.sessions.list.queryOptions({
-      page,
-      limit,
-      search: debouncedSearch || undefined,
+      page: queryState.page,
+      limit: queryState.limit,
+      search: queryState.search || undefined,
       activeOnly,
     }),
   );
@@ -111,87 +122,112 @@ export default function SessionsPage() {
     }),
   );
 
-  const columns: Column<Session>[] = [
-    {
-      key: "user",
-      header: "User",
-      cell: (row) => (
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={row.userImage ?? undefined} />
-            <AvatarFallback>
-              {row.userName?.charAt(0).toUpperCase() ?? "?"}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-medium">{row.userName ?? "Unknown"}</p>
-            <p className="text-sm text-muted-foreground">
-              {row.userEmail ?? "No email"}
-            </p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "device",
-      header: "Device",
-      cell: (row) => (
-        <div>
-          <p className="text-sm">{formatUserAgent(row.userAgent)}</p>
-          <p className="text-xs text-muted-foreground">
-            {row.ipAddress ?? "Unknown IP"}
-          </p>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      cell: (row) => {
-        const isActive = new Date(row.expiresAt) > new Date();
-        return (
-          <Badge variant={isActive ? "secondary" : "outline"}>
-            {isActive ? "Active" : "Expired"}
-          </Badge>
-        );
+  // TanStack Table column definitions
+  const columns = useMemo<ColumnDef<Session>[]>(
+    () => [
+      {
+        id: "user",
+        accessorKey: "userName",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="User" />
+        ),
+        cell: ({ row }) => {
+          const session = row.original;
+          return (
+            <div className="flex items-center gap-3">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={session.userImage ?? undefined} />
+                <AvatarFallback>
+                  {session.userName?.charAt(0).toUpperCase() ?? "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium">{session.userName ?? "Unknown"}</p>
+                <p className="text-sm text-muted-foreground">
+                  {session.userEmail ?? "No email"}
+                </p>
+              </div>
+            </div>
+          );
+        },
+        enableSorting: true,
       },
-    },
-    {
-      key: "createdAt",
-      header: "Created",
-      cell: (row) => (
-        <span className="text-sm text-muted-foreground">
-          {new Date(row.createdAt).toLocaleDateString()}
-        </span>
-      ),
-    },
-    {
-      key: "expiresAt",
-      header: "Expires",
-      cell: (row) => (
-        <span className="text-sm text-muted-foreground">
-          {new Date(row.expiresAt).toLocaleDateString()}
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      header: "",
-      className: "w-[50px]",
-      cell: (row) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            setSelectedSession(row);
-            setRevokeDialogOpen(true);
-          }}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      ),
-    },
-  ];
+      {
+        id: "device",
+        header: "Device",
+        cell: ({ row }) => {
+          const session = row.original;
+          return (
+            <div>
+              <p className="text-sm">{formatUserAgent(session.userAgent)}</p>
+              <p className="text-xs text-muted-foreground">
+                {session.ipAddress ?? "Unknown IP"}
+              </p>
+            </div>
+          );
+        },
+        enableSorting: false,
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const isActive = new Date(row.original.expiresAt) > new Date();
+          return (
+            <Badge variant={isActive ? "secondary" : "outline"}>
+              {isActive ? "Active" : "Expired"}
+            </Badge>
+          );
+        },
+        enableSorting: false,
+      },
+      {
+        id: "createdAt",
+        accessorKey: "createdAt",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Created" />
+        ),
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {new Date(row.original.createdAt).toLocaleDateString()}
+          </span>
+        ),
+        enableSorting: true,
+      },
+      {
+        id: "expiresAt",
+        accessorKey: "expiresAt",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Expires" />
+        ),
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {new Date(row.original.expiresAt).toLocaleDateString()}
+          </span>
+        ),
+        enableSorting: true,
+      },
+      {
+        id: "actions",
+        header: "",
+        size: 50,
+        cell: ({ row }) => (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setSelectedSession(row.original);
+              setRevokeDialogOpen(true);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        ),
+        enableSorting: false,
+      },
+    ],
+    [],
+  );
 
   return (
     <div className="flex flex-col h-full min-w-0">
@@ -238,21 +274,22 @@ export default function SessionsPage() {
           </Button>
         </div>
 
-        {/* Data Table */}
+        {/* Data Table with nuqs URL state */}
         <DataTable
           columns={columns}
           data={data?.data ?? []}
+          pageCount={data?.pagination?.totalPages ?? 0}
           isLoading={isLoading}
           searchPlaceholder="Search by user or IP..."
-          search={search}
-          onSearchChange={setSearch}
-          pagination={data?.pagination}
-          onPageChange={setPage}
-          onLimitChange={(newLimit) => {
-            setLimit(newLimit);
-            setPage(1);
-          }}
           emptyMessage="No sessions found."
+          showToolbar={true}
+          getRowId={(row) => row.id}
+          pagination={tableState.pagination}
+          onPaginationChange={tableState.onPaginationChange}
+          sorting={tableState.sorting}
+          onSortingChange={tableState.onSortingChange}
+          globalFilter={tableState.globalFilter}
+          onGlobalFilterChange={tableState.onGlobalFilterChange}
         />
       </div>
 

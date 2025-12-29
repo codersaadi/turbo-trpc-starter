@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "../../../libs/trpc/trpc-utils";
 import { useSession } from "../../../libs/auth-client";
 import { AdminHeader } from "../../../components/admin/admin-header";
-import { DataTable, Column } from "../../../components/admin/data-table";
+import {
+  DataTable,
+  DataTableColumnHeader,
+  useDataTable,
+} from "@repo/ui/components/data-table";
+import type { ColumnDef } from "@repo/ui/components/data-table";
 import { Button } from "@repo/ui/components/ui/button";
 import { Badge } from "@repo/ui/components/ui/badge";
 import {
@@ -38,9 +43,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/ui/select";
-import { MoreHorizontal, Shield, Ban, Trash2, Eye } from "lucide-react";
+import { MoreHorizontal, Ban, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
-import { useDebounce } from "@repo/ui/hooks/use-debounce";
 import { toast } from "@repo/ui/components/ui/sonner";
 
 type User = {
@@ -64,22 +68,35 @@ export default function UsersPage() {
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
 
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [search, setSearch] = useState("");
+  // Status/role filters (not managed by useDataTable since they're custom)
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  const debouncedSearch = useDebounce(search, 300);
 
+  // Dialogs
   const [banDialogOpen, setBanDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
+  // Use the new useDataTable hook for URL state
+  const { queryState, tableState } = useDataTable({
+    defaultPageSize: 20,
+    defaultSortBy: "createdAt",
+    defaultSortOrder: "desc",
+  });
+
+  // Query with combined state
   const { data, isLoading } = useQuery(
     trpc.admin.users.list.queryOptions({
-      page,
-      limit,
-      search: debouncedSearch || undefined,
+      page: queryState.page,
+      limit: queryState.limit,
+      search: queryState.search || undefined,
+      sortBy: queryState.sortBy as
+        | "createdAt"
+        | "name"
+        | "email"
+        | "updatedAt"
+        | undefined,
+      sortOrder: queryState.sortOrder,
       status:
         statusFilter !== "all"
           ? (statusFilter as "active" | "banned" | "unverified")
@@ -91,6 +108,7 @@ export default function UsersPage() {
     }),
   );
 
+  // Mutations
   const banMutation = useMutation(
     trpc.admin.users.setBanStatus.mutationOptions({
       onSuccess: () => {
@@ -137,145 +155,169 @@ export default function UsersPage() {
     }),
   );
 
-  const columns: Column<User>[] = [
-    {
-      key: "user",
-      header: "User",
-      cell: (row) => {
-        const isCurrentUser = row.id === currentUserId;
-        return (
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={row.image ?? undefined} />
-              <AvatarFallback>
-                {row.name?.charAt(0).toUpperCase() ?? "?"}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium flex items-center gap-2">
-                {row.name}
-                {isCurrentUser && (
-                  <Badge variant="outline" className="text-xs">
-                    You
-                  </Badge>
-                )}
-              </p>
-              <p className="text-sm text-muted-foreground">{row.email}</p>
+  // TanStack Table column definitions
+  const columns = useMemo<ColumnDef<User>[]>(
+    () => [
+      {
+        id: "user",
+        accessorKey: "name",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="User" />
+        ),
+        cell: ({ row }) => {
+          const user = row.original;
+          const isCurrentUser = user.id === currentUserId;
+          return (
+            <div className="flex items-center gap-3">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user.image ?? undefined} />
+                <AvatarFallback>
+                  {user.name?.charAt(0).toUpperCase() ?? "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium flex items-center gap-2">
+                  {user.name}
+                  {isCurrentUser && (
+                    <Badge variant="outline" className="text-xs">
+                      You
+                    </Badge>
+                  )}
+                </p>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
+              </div>
             </div>
-          </div>
-        );
+          );
+        },
+        enableSorting: true,
       },
-    },
-    {
-      key: "role",
-      header: "Role",
-      cell: (row) => {
-        const isCurrentUser = row.id === currentUserId;
-        return (
-          <Select
-            value={row.role ?? "user"}
-            onValueChange={(value) => {
-              roleMutation.mutate({
-                userId: row.id,
-                role: value as "user" | "admin" | "moderator",
-              });
-            }}
-            disabled={isCurrentUser}
-          >
-            <SelectTrigger className="w-30">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="user">User</SelectItem>
-              <SelectItem value="moderator">Moderator</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
-        );
+      {
+        id: "role",
+        accessorKey: "role",
+        header: "Role",
+        cell: ({ row }) => {
+          const user = row.original;
+          const isCurrentUser = user.id === currentUserId;
+          return (
+            <Select
+              value={user.role ?? "user"}
+              onValueChange={(value) => {
+                roleMutation.mutate({
+                  userId: user.id,
+                  role: value as "user" | "admin" | "moderator",
+                });
+              }}
+              disabled={isCurrentUser}
+            >
+              <SelectTrigger className="w-30">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="moderator">Moderator</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          );
+        },
+        enableSorting: false,
       },
-    },
-    {
-      key: "status",
-      header: "Status",
-      cell: (row) => (
-        <div className="flex flex-wrap gap-1">
-          {row.banned && <Badge variant="destructive">Banned</Badge>}
-          {row.emailVerified ? (
-            <Badge variant="secondary">Verified</Badge>
-          ) : (
-            <Badge variant="outline">Unverified</Badge>
-          )}
-          {row.isActive === false && <Badge variant="outline">Inactive</Badge>}
-        </div>
-      ),
-    },
-    {
-      key: "createdAt",
-      header: "Joined",
-      cell: (row) => (
-        <span className="text-sm text-muted-foreground">
-          {new Date(row.createdAt).toLocaleDateString()}
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      header: "",
-      className: "w-[50px]",
-      cell: (row) => {
-        const isCurrentUser = row.id === currentUserId;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem asChild>
-                <Link href={`/admin/users/${row.id}`}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Details
-                </Link>
-              </DropdownMenuItem>
-              {!isCurrentUser && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSelectedUser(row);
-                      setBanDialogOpen(true);
-                    }}
-                  >
-                    <Ban className="mr-2 h-4 w-4" />
-                    {row.banned ? "Unban User" : "Ban User"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => {
-                      setSelectedUser(row);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete User
-                  </DropdownMenuItem>
-                </>
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const user = row.original;
+          return (
+            <div className="flex flex-wrap gap-1">
+              {user.banned && <Badge variant="destructive">Banned</Badge>}
+              {user.emailVerified ? (
+                <Badge variant="secondary">Verified</Badge>
+              ) : (
+                <Badge variant="outline">Unverified</Badge>
               )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
+              {user.isActive === false && (
+                <Badge variant="outline">Inactive</Badge>
+              )}
+            </div>
+          );
+        },
+        enableSorting: false,
       },
-    },
-  ];
+      {
+        id: "createdAt",
+        accessorKey: "createdAt",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Joined" />
+        ),
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {new Date(row.original.createdAt).toLocaleDateString()}
+          </span>
+        ),
+        enableSorting: true,
+      },
+      {
+        id: "actions",
+        header: "",
+        size: 50,
+        cell: ({ row }) => {
+          const user = row.original;
+          const isCurrentUser = user.id === currentUserId;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem asChild>
+                  <Link href={`/admin/users/${user.id}`}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Details
+                  </Link>
+                </DropdownMenuItem>
+                {!isCurrentUser && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setBanDialogOpen(true);
+                      }}
+                    >
+                      <Ban className="mr-2 h-4 w-4" />
+                      {user.banned ? "Unban User" : "Ban User"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete User
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+        enableSorting: false,
+      },
+    ],
+    [currentUserId, roleMutation],
+  );
 
   return (
     <div className="flex flex-col h-full min-w-0">
       <AdminHeader breadcrumbs={[{ label: "Users" }]} />
 
       <div className="flex-1 space-y-4 p-6 overflow-auto">
-        {/* Filters */}
+        {/* Custom Filters (status/role) */}
         <div className="flex flex-wrap gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-37.5">
@@ -302,21 +344,22 @@ export default function UsersPage() {
           </Select>
         </div>
 
-        {/* Data Table */}
+        {/* Data Table with nuqs URL state */}
         <DataTable
           columns={columns}
           data={data?.data ?? []}
+          pageCount={data?.pagination?.totalPages ?? 0}
           isLoading={isLoading}
           searchPlaceholder="Search users..."
-          search={search}
-          onSearchChange={setSearch}
-          pagination={data?.pagination}
-          onPageChange={setPage}
-          onLimitChange={(newLimit) => {
-            setLimit(newLimit);
-            setPage(1);
-          }}
           emptyMessage="No users found."
+          showToolbar={true}
+          getRowId={(row) => row.id}
+          pagination={tableState.pagination}
+          onPaginationChange={tableState.onPaginationChange}
+          sorting={tableState.sorting}
+          onSortingChange={tableState.onSortingChange}
+          globalFilter={tableState.globalFilter}
+          onGlobalFilterChange={tableState.onGlobalFilterChange}
         />
       </div>
 

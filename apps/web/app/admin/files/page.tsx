@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "../../../libs/trpc/trpc-utils";
 import { AdminHeader } from "../../../components/admin/admin-header";
-import { DataTable, Column } from "../../../components/admin/data-table";
+import {
+  DataTable,
+  DataTableColumnHeader,
+  useDataTable,
+} from "@repo/ui/components/data-table";
+import type { ColumnDef } from "@repo/ui/components/data-table";
 import { StatsCard } from "../../../components/admin/stats-card";
 import { Button } from "@repo/ui/components/ui/button";
 import { Badge } from "@repo/ui/components/ui/badge";
@@ -34,7 +39,6 @@ import {
   Image,
   File,
 } from "lucide-react";
-import { useDebounce } from "@repo/ui/hooks/use-debounce";
 
 type FileRecord = {
   id: string;
@@ -69,22 +73,34 @@ export default function FilesPage() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [search, setSearch] = useState("");
+  // Type filter (not managed by useDataTable since it's custom)
   const [typeFilter, setTypeFilter] = useState<
     "all" | "license" | "attachment" | "avatar" | "general"
   >("all");
-  const debouncedSearch = useDebounce(search, 300);
 
+  // Dialogs
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileRecord | null>(null);
 
+  // Use the new useDataTable hook for URL state
+  const { queryState, tableState } = useDataTable({
+    defaultPageSize: 20,
+    defaultSortBy: "createdAt",
+    defaultSortOrder: "desc",
+  });
+
+  // Query with combined state
   const { data, isLoading } = useQuery(
     trpc.admin.files.list.queryOptions({
-      page,
-      limit,
-      search: debouncedSearch || undefined,
+      page: queryState.page,
+      limit: queryState.limit,
+      search: queryState.search || undefined,
+      sortBy: queryState.sortBy as
+        | "createdAt"
+        | "fileSize"
+        | "originalFilename"
+        | undefined,
+      sortOrder: queryState.sortOrder,
       type: typeFilter !== "all" ? typeFilter : undefined,
     }),
   );
@@ -110,68 +126,92 @@ export default function FilesPage() {
     }),
   );
 
-  const columns: Column<FileRecord>[] = [
-    {
-      key: "file",
-      header: "File",
-      cell: (row) => (
-        <div className="flex items-center gap-3">
-          {getFileIcon(row.contentType)}
-          <div>
-            <p className="font-medium truncate max-w-[200px]">{row.fileName}</p>
-            <p className="text-xs text-muted-foreground">
-              {formatBytes(row.fileSize)}
-            </p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "type",
-      header: "Type",
-      cell: (row) => (
-        <Badge variant="outline">{row.fileType ?? "unknown"}</Badge>
-      ),
-    },
-    {
-      key: "uploader",
-      header: "Uploader",
-      cell: (row) => (
-        <div>
-          <p className="text-sm">{row.uploaderName ?? "Unknown"}</p>
-          <p className="text-xs text-muted-foreground">
-            {row.uploaderEmail ?? "No email"}
-          </p>
-        </div>
-      ),
-    },
-    {
-      key: "createdAt",
-      header: "Uploaded",
-      cell: (row) => (
-        <span className="text-sm text-muted-foreground">
-          {new Date(row.createdAt).toLocaleDateString()}
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      header: "",
-      className: "w-[50px]",
-      cell: (row) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            setSelectedFile(row);
-            setDeleteDialogOpen(true);
-          }}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      ),
-    },
-  ];
+  // TanStack Table column definitions
+  const columns = useMemo<ColumnDef<FileRecord>[]>(
+    () => [
+      {
+        id: "file",
+        accessorKey: "fileName",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="File" />
+        ),
+        cell: ({ row }) => {
+          const file = row.original;
+          return (
+            <div className="flex items-center gap-3">
+              {getFileIcon(file.contentType)}
+              <div>
+                <p className="font-medium truncate max-w-[200px]">
+                  {file.fileName}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatBytes(file.fileSize)}
+                </p>
+              </div>
+            </div>
+          );
+        },
+        enableSorting: true,
+      },
+      {
+        id: "type",
+        accessorKey: "fileType",
+        header: "Type",
+        cell: ({ row }) => (
+          <Badge variant="outline">{row.original.fileType ?? "unknown"}</Badge>
+        ),
+        enableSorting: false,
+      },
+      {
+        id: "uploader",
+        header: "Uploader",
+        cell: ({ row }) => {
+          const file = row.original;
+          return (
+            <div>
+              <p className="text-sm">{file.uploaderName ?? "Unknown"}</p>
+              <p className="text-xs text-muted-foreground">
+                {file.uploaderEmail ?? "No email"}
+              </p>
+            </div>
+          );
+        },
+        enableSorting: false,
+      },
+      {
+        id: "createdAt",
+        accessorKey: "createdAt",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Uploaded" />
+        ),
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {new Date(row.original.createdAt).toLocaleDateString()}
+          </span>
+        ),
+        enableSorting: true,
+      },
+      {
+        id: "actions",
+        header: "",
+        size: 50,
+        cell: ({ row }) => (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setSelectedFile(row.original);
+              setDeleteDialogOpen(true);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        ),
+        enableSorting: false,
+      },
+    ],
+    [],
+  );
 
   // Predefined file types
   const fileTypes = ["license", "attachment", "avatar", "general"] as const;
@@ -217,7 +257,7 @@ export default function FilesPage() {
           </div>
         )}
 
-        {/* Filters */}
+        {/* Custom Filters */}
         <div className="flex flex-wrap gap-2">
           <Select
             value={typeFilter}
@@ -237,21 +277,22 @@ export default function FilesPage() {
           </Select>
         </div>
 
-        {/* Data Table */}
+        {/* Data Table with nuqs URL state */}
         <DataTable
           columns={columns}
           data={data?.data ?? []}
+          pageCount={data?.pagination?.totalPages ?? 0}
           isLoading={isLoading}
           searchPlaceholder="Search files..."
-          search={search}
-          onSearchChange={setSearch}
-          pagination={data?.pagination}
-          onPageChange={setPage}
-          onLimitChange={(newLimit) => {
-            setLimit(newLimit);
-            setPage(1);
-          }}
           emptyMessage="No files found."
+          showToolbar={true}
+          getRowId={(row) => row.id}
+          pagination={tableState.pagination}
+          onPaginationChange={tableState.onPaginationChange}
+          sorting={tableState.sorting}
+          onSortingChange={tableState.onSortingChange}
+          globalFilter={tableState.globalFilter}
+          onGlobalFilterChange={tableState.onGlobalFilterChange}
         />
       </div>
 
@@ -261,8 +302,8 @@ export default function FilesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete File</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{selectedFile?.fileName}"? This
-              action cannot be undone.
+              Are you sure you want to delete &quot;{selectedFile?.fileName}
+              &quot;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

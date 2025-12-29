@@ -169,7 +169,7 @@ export default function FeatureFlagsPage() {
       <div className="flex flex-col h-full min-w-0">
         <AdminHeader breadcrumbs={[{ label: "Feature Flags" }]} />
         <div className="p-6 space-y-6 overflow-auto">
-          <Skeleton className="h-[400px] w-full" />
+          <Skeleton className="h-100 w-full" />
         </div>
       </div>
     );
