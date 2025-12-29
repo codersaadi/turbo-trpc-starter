@@ -10,11 +10,11 @@ import {
   Section,
   Tailwind,
   Text,
-} from '@react-email/components';
+} from "@react-email/components";
 
 // Common interface for all auth email templates
 interface AuthEmailTemplateProps {
-  type: 'magic-link' | 'otp';
+  type: "magic-link" | "otp";
   link?: string;
   code?: string;
   username: string;
@@ -30,9 +30,9 @@ export function magicLinkTemplate({
   username,
   logoUrl,
   svgLogo,
-  appName = 'Zaki',
+  appName = "Zaki",
 }: AuthEmailTemplateProps) {
-  const logo = logoUrl ?? 'https://via.placeholder.com/40x40/333/fff?text=Z';
+  const logo = logoUrl ?? "https://via.placeholder.com/40x40/333/fff?text=Z";
 
   return (
     <Html>
@@ -40,7 +40,7 @@ export function magicLinkTemplate({
       <Preview>Sign in to your {appName} account</Preview>
       <Tailwind>
         <Body className="bg-white font-sans">
-          <Container className="mx-auto my-8 max-w-[600px] bg-white">
+          <Container className="mx-auto my-8 max-w-150 bg-white">
             {/* Header */}
             <Section className="bg-white px-6 py-8 text-center">
               {svgLogo ? (
@@ -127,10 +127,10 @@ export function forgotPasswordTemplate({
   username,
   logoUrl,
   svgLogo,
-  appName = 'Zaki',
+  appName = "Zaki",
 }: AuthEmailTemplateProps) {
-  const logo = logoUrl ?? 'https://via.placeholder.com/40x40/333/fff?text=Z';
-  const isOTP = type === 'otp';
+  const logo = logoUrl ?? "https://via.placeholder.com/40x40/333/fff?text=Z";
+  const isOTP = type === "otp";
 
   return (
     <Html>
@@ -248,10 +248,10 @@ export function signInTemplate({
   username,
   logoUrl,
   svgLogo,
-  appName = 'Zaki',
+  appName = "Zaki",
 }: AuthEmailTemplateProps) {
-  const logo = logoUrl ?? 'https://via.placeholder.com/40x40/333/fff?text=Z';
-  const isOTP = type === 'otp';
+  const logo = logoUrl ?? "https://via.placeholder.com/40x40/333/fff?text=Z";
+  const isOTP = type === "otp";
 
   return (
     <Html>
@@ -333,7 +333,7 @@ export function signInTemplate({
               )}
 
               <Text className="mb-4 text-base text-gray-800 leading-6">
-                If you didn't request this sign-in {isOTP ? 'code' : 'link'},
+                If you didn't request this sign-in {isOTP ? "code" : "link"},
                 you can safely ignore this email.
               </Text>
 
@@ -366,10 +366,10 @@ export function emailVerificationTemplate({
   username,
   logoUrl,
   svgLogo,
-  appName = 'Zaki',
+  appName = "Zaki",
 }: AuthEmailTemplateProps) {
-  const logo = logoUrl ?? 'https://via.placeholder.com/40x40/333/fff?text=Z';
-  const isOTP = type === 'otp';
+  const logo = logoUrl ?? "https://via.placeholder.com/40x40/333/fff?text=Z";
+  const isOTP = type === "otp";
 
   return (
     <Html>
@@ -404,8 +404,8 @@ export function emailVerificationTemplate({
               </Text>
 
               <Text className="mb-4 text-base text-gray-800 leading-6">
-                Welcome to {appName}! Please verify your email address to complete
-                your registration.
+                Welcome to {appName}! Please verify your email address to
+                complete your registration.
               </Text>
 
               {isOTP ? (
@@ -455,8 +455,8 @@ export function emailVerificationTemplate({
               )}
 
               <Text className="mb-4 text-base text-gray-800 leading-6">
-                If you didn't create a {appName} account, you can safely ignore this
-                email.
+                If you didn't create a {appName} account, you can safely ignore
+                this email.
               </Text>
 
               <Text className="mb-4 text-base text-gray-800 leading-6">
@@ -469,7 +469,8 @@ export function emailVerificationTemplate({
             {/* Footer */}
             <Section className="px-6 py-4 border-t border-gray-200">
               <Text className="text-xs text-gray-500 leading-4 text-center mb-0">
-                This email was sent because you signed up for a {appName} account.
+                This email was sent because you signed up for a {appName}{" "}
+                account.
               </Text>
             </Section>
           </Container>
