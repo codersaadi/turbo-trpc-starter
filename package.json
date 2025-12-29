@@ -11,20 +11,29 @@
     "bump-ui": "npx shadcn@latest add --all --overwrite -c packages/ui",
     "web": "pnpm --filter web",
     "clean": "turbo run clean && rm -rf node_modules",
-    "prepare": "husky"
+    "prepare": "husky",
+    "generate-env-types": "pnpm --filter @repo/env generate-env-types",
+    "setup": "./scripts/setup-env.sh",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d",
+    "db:seed": "pnpm --filter @repo/api db:seed",
+    "db:seed:admin": "pnpm --filter @repo/api db:seed:admin"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.0.0",
     "@commitlint/config-conventional": "^20.0.0",
+    "drizzle-kit": "^0.31.4",
+    "drizzle-orm": "^0.44.4",
     "husky": "^9.0.0",
     "lint-staged": "^16.0.0",
+    "pg": "^8.16.3",
     "prettier": "^3.7.4",
     "turbo": "^2.7.2",
     "typescript": "5.9.2"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix",
       "prettier --write"
     ],
     "*.{json,md,yml,yaml}": [

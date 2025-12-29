@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { SidebarTrigger } from "@repo/ui/components/ui/sidebar";
 import { Separator } from "@repo/ui/components/ui/separator";
 import {
@@ -17,7 +18,7 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ breadcrumbs = [] }: AdminHeaderProps) {
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 h-4" />
       <Breadcrumb>
@@ -26,14 +27,18 @@ export function AdminHeader({ breadcrumbs = [] }: AdminHeaderProps) {
             <BreadcrumbLink href="/admin">Admin</BreadcrumbLink>
           </BreadcrumbItem>
           {breadcrumbs.map((crumb, index) => (
-            <BreadcrumbItem key={index}>
+            <Fragment key={index}>
               <BreadcrumbSeparator className="hidden md:block" />
-              {crumb.href ? (
-                <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
-              ) : (
-                <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-              )}
-            </BreadcrumbItem>
+              <BreadcrumbItem>
+                {crumb.href ? (
+                  <BreadcrumbLink href={crumb.href}>
+                    {crumb.label}
+                  </BreadcrumbLink>
+                ) : (
+                  <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                )}
+              </BreadcrumbItem>
+            </Fragment>
           ))}
         </BreadcrumbList>
       </Breadcrumb>

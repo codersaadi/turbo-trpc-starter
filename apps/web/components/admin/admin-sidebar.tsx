@@ -11,6 +11,7 @@ import {
   Flag,
   ChevronLeft,
   Shield,
+  LogOut,
 } from "lucide-react";
 
 import {
@@ -25,7 +26,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarSeparator,
 } from "@repo/ui/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@repo/ui/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@repo/ui/components/ui/avatar";
 
 const navigation = [
   {
@@ -79,8 +89,8 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
+    <Sidebar collapsible="icon" className="border-r">
+      <SidebarHeader className="h-16 border-b">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
@@ -133,14 +143,44 @@ export function AdminSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
+        <SidebarSeparator />
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Back to App">
-              <Link href="/">
-                <ChevronLeft className="size-4" />
-                <span>Back to App</span>
-              </Link>
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton size="lg" tooltip="Admin User">
+                  <Avatar className="size-8">
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                      AD
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">Admin</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      admin@example.com
+                    </span>
+                  </div>
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="top"
+                className="w-[--radix-dropdown-menu-trigger-width]"
+              >
+                <DropdownMenuItem asChild>
+                  <Link href="/">
+                    <ChevronLeft className="mr-2 size-4" />
+                    Back to App
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/login" className="text-destructive">
+                    <LogOut className="mr-2 size-4" />
+                    Sign Out
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

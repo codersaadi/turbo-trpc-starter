@@ -1,15 +1,17 @@
 {
- "name": "@repo/env",
- "version": "1.0.0",
- "private": true,
- "scripts": {
-  "build": "tsc",
-  "build:watch": "tsc --watch",
-  "prepublishOnly": "npm run build"
- },
- "devDependencies": {
-  "@repo/typescript-config": "workspace:*",
-  "typescript": "5.9.2",
-  "@types/node": "24.1.0"
- }
+  "name": "@repo/env",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "prepublishOnly": "npm run build",
+    "generate-env-types": "npx tsx scripts/generate-env-types.ts"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "24.1.0",
+    "tsx": "^4.20.3",
+    "typescript": "5.9.2"
+  }
 }

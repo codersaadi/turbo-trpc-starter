@@ -19,9 +19,6 @@ import {
 import { expo } from "@better-auth/expo"; // Expo-specific auth not used in server context
 
 const getNextCookiesPlugin = async () => {
-  if (!process.env.NEXT_PUBLIC_DASHBOARD_EMBEDDED_MODE) {
-    return null;
-  }
   const nextCookies = (await import("better-auth/next-js")).nextCookies;
   return nextCookies();
 };
@@ -96,7 +93,7 @@ const featurePlugins = {
           case "email-verification":
             // Skip - handled by custom workflow in auth.signup endpoint
             console.log(
-              `[Email OTP] Skipping Better Auth email verification - using custom workflow`
+              `[Email OTP] Skipping Better Auth email verification - using custom workflow`,
             );
             break;
           case "forget-password":
@@ -139,7 +136,7 @@ const featurePlugins = {
     magicLink({
       async sendMagicLink(data, _req) {
         console.log(
-          `[Magic Link] Sending link to ${data?.email}: ${data?.url}`
+          `[Magic Link] Sending link to ${data?.email}: ${data?.url}`,
         );
         await sendEmail({
           to: data?.email,
@@ -294,11 +291,9 @@ export const buildAuthPlugins = async (): Promise<BetterAuthPlugin[]> => {
   ];
 
   // Handle async nextCookies plugin separately
-  if (process.env.NEXT_PUBLIC_DASHBOARD_EMBEDDED_MODE) {
-    const nextCookiesPlugin = await getNextCookiesPlugin();
-    if (nextCookiesPlugin) {
-      plugins.push(nextCookiesPlugin);
-    }
+  const nextCookiesPlugin = await getNextCookiesPlugin();
+  if (nextCookiesPlugin) {
+    plugins.push(nextCookiesPlugin);
   }
 
   return plugins;

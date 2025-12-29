@@ -37,10 +37,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/ui/select";
-import { toast } from "sonner";
 import { MoreHorizontal, Shield, Ban, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 import { useDebounce } from "@repo/ui/hooks/use-debounce";
+import { toast } from "@repo/ui/components/ui/sonner";
 
 type User = {
   id: string;
@@ -247,14 +247,14 @@ export default function UsersPage() {
   ];
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full min-w-0">
       <AdminHeader breadcrumbs={[{ label: "Users" }]} />
 
-      <div className="flex-1 space-y-4 p-6">
+      <div className="flex-1 space-y-4 p-6 overflow-auto">
         {/* Filters */}
         <div className="flex flex-wrap gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-37.5">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>

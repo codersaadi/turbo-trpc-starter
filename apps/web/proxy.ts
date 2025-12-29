@@ -28,13 +28,13 @@ const adminRoutes = ["/admin"];
 function isPublicRoute(pathname: string): boolean {
   // Allow exact matches and sub-paths
   return publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 }
 
 function requiresAdminAccess(pathname: string): boolean {
   return adminRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 }
 

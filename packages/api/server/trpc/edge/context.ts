@@ -1,4 +1,5 @@
 import { GetSession } from "../../auth/get-auth";
+import { betterFetch } from "@better-fetch/fetch";
 
 interface CreateContextOptions {
   auth: GetSession | null;
@@ -23,14 +24,18 @@ export const createTRPCEdgeContext = async (req: Request) => {
     req.headers.forEach((value, key) => {
       headers.set(key, value);
     });
-    // instead we will use better fetch here to get the session
-    // const session = await authConfig.api.getSession({
-    //   headers
-    // });
+    const baseURL = new URL(req.url).origin;
 
-    // if (session) {
-    //   auth = session;
-    // }
+    const { data: session } = (await betterFetch("/api/auth/get-session", {
+      baseURL,
+      headers: {
+        cookie: req.headers.get("cookie") || "",
+      },
+    })) as { data: GetSession | null };
+
+    if (session) {
+      auth = session;
+    }
   } catch (_error) {
     auth = null;
   }

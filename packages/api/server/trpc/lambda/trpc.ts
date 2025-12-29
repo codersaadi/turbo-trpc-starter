@@ -38,10 +38,21 @@ const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
 
 // Protected procedure that requires authentication
 export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);
-export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+// Middleware to check if user is admin
+const enforceUserIsAdmin = t.middleware(({ ctx, next }) => {
+  if (ctx.auth?.user?.role !== "admin") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Admin access required",
+    });
+  }
   return next({
     ctx: {
       ...ctx,
+      auth: ctx.auth,
     },
   });
 });
+
+// Admin procedure that requires admin role
+export const adminProcedure = protectedProcedure.use(enforceUserIsAdmin);

@@ -42,7 +42,9 @@ export async function requireSession() {
  */
 export async function requireAdminSession() {
   const session = await requireSession();
-
+  if (!session) {
+    redirect("/login");
+  }
   if (session.user.role !== "admin") {
     redirect("/dashboard");
   }

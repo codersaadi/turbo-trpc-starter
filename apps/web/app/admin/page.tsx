@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "../../libs/trpc/trpc-utils";
-import { AdminHeader } from "../../components/admin/admin-header";
 import { StatsCard } from "../../components/admin/stats-card";
 import {
   Card,
@@ -64,10 +63,8 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="flex flex-col">
-      <AdminHeader breadcrumbs={[{ label: "Dashboard" }]} />
-
-      <div className="flex-1 space-y-6 p-6">
+    <div className="flex flex-1 flex-col gap-4 p-4">
+      <div className="flex-1 space-y-6 p-6 overflow-auto">
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {statsLoading ? (
@@ -116,9 +113,9 @@ export default function AdminDashboard() {
         </div>
 
         {/* Charts and Recent Activity */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
           {/* User Growth Chart */}
-          <Card className="col-span-4">
+          <Card className="lg:col-span-4">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
@@ -127,7 +124,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               {growthLoading ? (
-                <Skeleton className="h-[300px] w-full" />
+                <Skeleton className="h-75 w-full" />
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart
@@ -191,7 +188,7 @@ export default function AdminDashboard() {
           </Card>
 
           {/* Recent Signups */}
-          <Card className="col-span-3">
+          <Card className="lg:col-span-3">
             <CardHeader>
               <CardTitle>Recent Signups</CardTitle>
             </CardHeader>

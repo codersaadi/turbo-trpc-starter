@@ -1,1 +1,1 @@
-export { getServerDB, serverDB } from '../core/client';
+export { getServerDB, serverDB } from "../core/client";
