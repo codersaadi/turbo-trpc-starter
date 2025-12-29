@@ -7,8 +7,8 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "bump-ui": "npx shadcn@latest add --all --overwrite -c packages/ui"
-
+    "bump-ui": "npx shadcn@latest add --all --overwrite -c packages/ui",
+    "web":"pnpm --filter web"
   },
   "devDependencies": {
     "prettier": "^3.7.4",

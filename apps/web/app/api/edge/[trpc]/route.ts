@@ -1,4 +1,3 @@
-import { appRouter } from "@repo/api/server/routers";
 import { edgeRouter } from "@repo/api/server/routers/edge";
 import { createTRPCEdgeContext } from "@repo/api/server/trpc/edge";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
@@ -6,6 +5,7 @@ import { NextRequest } from "next/server";
 export const runtime = "edge";
 const handleRequest = async (req: NextRequest) => {
   // Debug logging
+  // eslint-disable-next-line turbo/no-undeclared-env-vars
   if (process.env.NODE_ENV === "development") {
     console.log("[tRPC Route] Method:", req.method);
     console.log("[tRPC Route] URL:", req.url);
