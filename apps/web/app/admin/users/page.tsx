@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "../../../libs/trpc/trpc-utils";
+import { useSession } from "../../../libs/auth-client";
 import { AdminHeader } from "../../../components/admin/admin-header";
 import { DataTable, Column } from "../../../components/admin/data-table";
 import { Button } from "@repo/ui/components/ui/button";
@@ -60,6 +61,8 @@ type User = {
 export default function UsersPage() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id;
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
@@ -138,44 +141,58 @@ export default function UsersPage() {
     {
       key: "user",
       header: "User",
-      cell: (row) => (
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={row.image ?? undefined} />
-            <AvatarFallback>
-              {row.name?.charAt(0).toUpperCase() ?? "?"}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-medium">{row.name}</p>
-            <p className="text-sm text-muted-foreground">{row.email}</p>
+      cell: (row) => {
+        const isCurrentUser = row.id === currentUserId;
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={row.image ?? undefined} />
+              <AvatarFallback>
+                {row.name?.charAt(0).toUpperCase() ?? "?"}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-medium flex items-center gap-2">
+                {row.name}
+                {isCurrentUser && (
+                  <Badge variant="outline" className="text-xs">
+                    You
+                  </Badge>
+                )}
+              </p>
+              <p className="text-sm text-muted-foreground">{row.email}</p>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: "role",
       header: "Role",
-      cell: (row) => (
-        <Select
-          value={row.role ?? "user"}
-          onValueChange={(value) => {
-            roleMutation.mutate({
-              userId: row.id,
-              role: value as "user" | "admin" | "moderator",
-            });
-          }}
-        >
-          <SelectTrigger className="w-[120px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="user">User</SelectItem>
-            <SelectItem value="moderator">Moderator</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-          </SelectContent>
-        </Select>
-      ),
+      cell: (row) => {
+        const isCurrentUser = row.id === currentUserId;
+        return (
+          <Select
+            value={row.role ?? "user"}
+            onValueChange={(value) => {
+              roleMutation.mutate({
+                userId: row.id,
+                role: value as "user" | "admin" | "moderator",
+              });
+            }}
+            disabled={isCurrentUser}
+          >
+            <SelectTrigger className="w-30">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="user">User</SelectItem>
+              <SelectItem value="moderator">Moderator</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        );
+      },
     },
     {
       key: "status",
@@ -205,44 +222,51 @@ export default function UsersPage() {
       key: "actions",
       header: "",
       className: "w-[50px]",
-      cell: (row) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem asChild>
-              <Link href={`/admin/users/${row.id}`}>
-                <Eye className="mr-2 h-4 w-4" />
-                View Details
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => {
-                setSelectedUser(row);
-                setBanDialogOpen(true);
-              }}
-            >
-              <Ban className="mr-2 h-4 w-4" />
-              {row.banned ? "Unban User" : "Ban User"}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={() => {
-                setSelectedUser(row);
-                setDeleteDialogOpen(true);
-              }}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete User
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
+      cell: (row) => {
+        const isCurrentUser = row.id === currentUserId;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem asChild>
+                <Link href={`/admin/users/${row.id}`}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Details
+                </Link>
+              </DropdownMenuItem>
+              {!isCurrentUser && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSelectedUser(row);
+                      setBanDialogOpen(true);
+                    }}
+                  >
+                    <Ban className="mr-2 h-4 w-4" />
+                    {row.banned ? "Unban User" : "Ban User"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={() => {
+                      setSelectedUser(row);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete User
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
     },
   ];
 
@@ -266,7 +290,7 @@ export default function UsersPage() {
           </Select>
 
           <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-37.5">
               <SelectValue placeholder="Role" />
             </SelectTrigger>
             <SelectContent>

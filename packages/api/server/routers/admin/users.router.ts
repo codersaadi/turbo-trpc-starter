@@ -2,7 +2,18 @@ import { z } from "zod";
 import { createTRPCRouter, adminProcedure } from "../../trpc/lambda";
 import { users, sessions, accounts } from "../../db/schema/better-auth";
 import { TRPCError } from "@trpc/server";
-import { sql, eq, and, or, count, isNull, desc, asc, ilike } from "drizzle-orm";
+import {
+  sql,
+  eq,
+  and,
+  or,
+  count,
+  isNull,
+  desc,
+  asc,
+  ilike,
+  not,
+} from "drizzle-orm";
 
 const userRoles = ["user", "admin", "moderator"] as const;
 
@@ -59,7 +70,6 @@ export const adminUsersRouter = createTRPCRouter({
       }
 
       const whereClause = and(...conditions);
-
       // Build sort
       const sortColumn = {
         createdAt: users.createdAt,

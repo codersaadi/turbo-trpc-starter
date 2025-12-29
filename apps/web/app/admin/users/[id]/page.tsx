@@ -199,7 +199,6 @@ export default function UserDetailPage() {
 
               <div className="flex flex-wrap gap-2">
                 <Button
-                  variant={user.banned ? "outline" : "destructive"}
                   size="sm"
                   onClick={() => {
                     banMutation.mutate({
@@ -216,7 +215,7 @@ export default function UserDetailPage() {
 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
+                    <Button size="sm">
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </Button>
