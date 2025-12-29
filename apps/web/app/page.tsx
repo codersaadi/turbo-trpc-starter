@@ -7,6 +7,9 @@ export default async function Home() {
       <Link href="/dashboard">
         <Button>Get Started</Button>
       </Link>
+      <Link className="px-4 pt-4" href="/new-ui-demo">
+        <Button variant={"outline"}>Try New UI</Button>
+      </Link>
     </>
   );
 }

@@ -3,6 +3,7 @@ import { requireSession } from "@/libs/auth";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 
 import { SidebarInset, SidebarProvider } from "@repo/ui/components/ui/sidebar";
+import { redirect } from "next/navigation";
 
 export default async function AdminLayout({
   children,

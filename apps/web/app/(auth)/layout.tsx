@@ -1,3 +1,5 @@
+import { getServerSession } from "@/libs/auth";
+import { redirect } from "next/navigation";
 import React from "react";
 
 interface AuthLayoutProps {
@@ -8,13 +10,18 @@ interface AuthLayoutProps {
  * Auth Layout - Professional split-screen design
  * Left: Branding/hero section, Right: Auth form
  */
-export default function AuthLayout({ children }: AuthLayoutProps) {
+export default async function AuthLayout({ children }: AuthLayoutProps) {
+  const session = await getServerSession();
+  if (session) {
+    return redirect("/dashboard");
+  }
+
   return (
     <div className="min-h-screen w-full flex">
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-zinc-900 relative overflow-hidden">
         {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900" />
+        <div className="absolute inset-0 bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-900" />
 
         {/* Decorative elements */}
         <div className="absolute inset-0">
@@ -83,7 +90,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
       {/* Right Panel - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-white dark:bg-zinc-950 p-6 sm:p-12">
-        <div className="w-full max-w-[400px]">{children}</div>
+        <div className="w-full max-w-100">{children}</div>
       </div>
     </div>
   );

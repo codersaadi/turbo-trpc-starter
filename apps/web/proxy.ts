@@ -20,6 +20,7 @@ const publicRoutes = [
   "/_next",
   "/favicon.ico",
   "/manifest.json",
+  "/new-ui-demo",
   "/.well-known", // Android assetlinks.json and iOS apple-app-site-association
 ];
 

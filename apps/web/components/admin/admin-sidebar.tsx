@@ -79,11 +79,6 @@ const navigation = [
         href: "/admin/feature-flags",
         icon: Flag,
       },
-      {
-        title: "Settings",
-        href: "/admin/settings",
-        icon: Settings,
-      },
     ],
   },
 ];
